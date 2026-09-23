@@ -1,4 +1,4 @@
-const { after, test } = require('node:test');
+const { after, before, beforeEach, test } = require('node:test');
 const assert = require('node:assert');
 const fs = require('node:fs');
 const fsPromises = require('node:fs/promises');
@@ -9,6 +9,7 @@ const path = require('node:path');
 const storageDir = fs.mkdtempSync(path.join(os.tmpdir(), 'dms-test-'));
 process.env.STORAGE_DIR = storageDir;
 const app = require('../src/app');
+const documentRepository = require('../src/repositories/document.repository');
 
 let server;
 let baseUrl;
@@ -20,6 +21,33 @@ async function startServer() {
   baseUrl = `http://127.0.0.1:${port}`;
 }
 
+async function uploadSampleDocument({
+  content = 'conteudo seguro',
+  fileName = 'relatorio.txt',
+  owner = 'user-123',
+} = {}) {
+  const formData = new FormData();
+  formData.append('file', new Blob([content]), fileName);
+
+  const response = await fetch(`${baseUrl}/upload`, {
+    method: 'POST',
+    headers: { 'X-User-Id': owner },
+    body: formData,
+  });
+
+  return { response, document: await response.json() };
+}
+
+before(async () => {
+  await startServer();
+});
+
+beforeEach(async () => {
+  documentRepository.clear();
+  await fsPromises.rm(storageDir, { recursive: true, force: true });
+  await fsPromises.mkdir(storageDir, { recursive: true });
+});
+
 after(async () => {
   if (server) {
     await new Promise((resolve) => server.close(resolve));
@@ -28,8 +56,6 @@ after(async () => {
 });
 
 test('expõe o health check', async () => {
-  await startServer();
-
   const response = await fetch(`${baseUrl}/health`);
   assert.strictEqual(response.status, 200);
   assert.deepStrictEqual(await response.json(), { status: 'ok' });
@@ -50,32 +76,47 @@ test('rejeita upload sem arquivo com erro estruturado', async () => {
   });
 });
 
-test('faz upload, lista e baixa o documento', async () => {
-  const formData = new FormData();
-  formData.append('file', new Blob(['conteudo seguro']), '../relatorio.txt');
-
-  const uploadResponse = await fetch(`${baseUrl}/upload`, {
-    method: 'POST',
-    headers: { 'X-User-Id': 'user-123' },
-    body: formData,
+test('faz upload do documento', async () => {
+  const { response, document } = await uploadSampleDocument({
+    content: 'conteudo do upload',
+    fileName: '../relatorio-upload.txt',
+    owner: 'user-upload',
   });
-  const document = await uploadResponse.json();
 
-  assert.strictEqual(uploadResponse.status, 201);
-  assert.strictEqual(document.originalName, 'relatorio.txt');
-  assert.strictEqual(document.owner, 'user-123');
+  assert.strictEqual(response.status, 201);
+  assert.strictEqual(document.originalName, 'relatorio-upload.txt');
+  assert.strictEqual(document.owner, 'user-upload');
   assert.ok(document.id);
   assert.strictEqual(document.storedName, undefined);
 
   const storedFiles = await fsPromises.readdir(storageDir);
   assert.strictEqual(storedFiles.length, 1);
   assert.match(storedFiles[0], /^[0-9a-f-]{36}\.txt$/);
+});
+
+test('lista documentos enviados', async () => {
+  const { document: uploadedDocument } = await uploadSampleDocument({
+    content: 'conteudo da listagem',
+    fileName: 'relatorio-listagem.txt',
+    owner: 'user-list',
+  });
 
   const listResponse = await fetch(`${baseUrl}/documents`);
-  assert.strictEqual(listResponse.status, 200);
-  assert.deepStrictEqual((await listResponse.json()).documents, [document]);
+  const payload = await listResponse.json();
 
-  const downloadResponse = await fetch(`${baseUrl}/documents/${document.id}/download`);
+  assert.strictEqual(listResponse.status, 200);
+  assert.deepStrictEqual(payload.documents, [uploadedDocument]);
+});
+
+test('baixa documento pelo id', async () => {
+  const { document: uploadedDocument } = await uploadSampleDocument({
+    content: 'conteudo do download',
+    fileName: 'relatorio-download.txt',
+    owner: 'user-download',
+  });
+
+  const downloadResponse = await fetch(`${baseUrl}/documents/${uploadedDocument.id}/download`);
+
   assert.strictEqual(downloadResponse.status, 200);
-  assert.strictEqual(await downloadResponse.text(), 'conteudo seguro');
+  assert.strictEqual(await downloadResponse.text(), 'conteudo do download');
 });
