@@ -1,4 +1,4 @@
-const { after, before, test } = require('node:test');
+const { after, before, beforeEach, test } = require('node:test');
 const assert = require('node:assert');
 const fs = require('node:fs');
 const fsPromises = require('node:fs/promises');
@@ -9,6 +9,7 @@ const path = require('node:path');
 const storageDir = fs.mkdtempSync(path.join(os.tmpdir(), 'dms-test-'));
 process.env.STORAGE_DIR = storageDir;
 const app = require('../src/app');
+const documentRepository = require('../src/repositories/document.repository');
 
 let server;
 let baseUrl;
@@ -39,6 +40,12 @@ async function uploadSampleDocument({
 
 before(async () => {
   await startServer();
+});
+
+beforeEach(async () => {
+  documentRepository.clear();
+  await fsPromises.rm(storageDir, { recursive: true, force: true });
+  await fsPromises.mkdir(storageDir, { recursive: true });
 });
 
 after(async () => {
@@ -83,7 +90,8 @@ test('faz upload do documento', async () => {
   assert.strictEqual(document.storedName, undefined);
 
   const storedFiles = await fsPromises.readdir(storageDir);
-  assert.ok(storedFiles.some((storedFile) => /^[0-9a-f-]{36}\.txt$/.test(storedFile)));
+  assert.strictEqual(storedFiles.length, 1);
+  assert.match(storedFiles[0], /^[0-9a-f-]{36}\.txt$/);
 });
 
 test('lista documentos enviados', async () => {
@@ -94,14 +102,10 @@ test('lista documentos enviados', async () => {
   });
 
   const listResponse = await fetch(`${baseUrl}/documents`);
-  const { documents } = await listResponse.json();
+  const payload = await listResponse.json();
 
   assert.strictEqual(listResponse.status, 200);
-  assert.ok(documents.some((document) => document.id === uploadedDocument.id));
-  assert.deepStrictEqual(
-    documents.find((document) => document.id === uploadedDocument.id),
-    uploadedDocument,
-  );
+  assert.deepStrictEqual(payload.documents, [uploadedDocument]);
 });
 
 test('baixa documento pelo id', async () => {
