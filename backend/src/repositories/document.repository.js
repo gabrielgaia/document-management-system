@@ -34,4 +34,8 @@ function remove(id) {
   }
 }
 
-module.exports = { create, list, findById, remove };
+function clear() {
+  documents.length = 0;
+}
+
+module.exports = { create, list, findById, remove, clear };
