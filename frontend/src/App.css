@@ -1,0 +1,152 @@
+:root {
+  color: #1d252c;
+  background: #f5f7f8;
+  font-family: Avenir, Montserrat, Corbel, 'URW Gothic', source-sans-pro, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #eef4f3 0%, #f8f7f2 48%, #edf2f7 100%);
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.app-shell {
+  width: min(1120px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 40px 0;
+}
+
+.app-header {
+  margin-bottom: 28px;
+}
+
+.app-header h1 {
+  margin: 0 0 8px;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  letter-spacing: 0;
+}
+
+.app-header p {
+  max-width: 640px;
+  margin: 0;
+  color: #51616d;
+  line-height: 1.6;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.panel {
+  border: 1px solid #dbe3e6;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 24px;
+  box-shadow: 0 20px 50px rgba(58, 76, 88, 0.08);
+}
+
+.panel h2 {
+  margin: 0 0 18px;
+  font-size: 1.2rem;
+}
+
+.upload-form {
+  display: grid;
+  gap: 16px;
+}
+
+.form-field {
+  display: grid;
+  gap: 8px;
+}
+
+.form-field label {
+  color: #34444f;
+  font-weight: 700;
+}
+
+.form-field input {
+  width: 100%;
+  border: 1px solid #cbd8dc;
+  border-radius: 6px;
+  background: #fff;
+  padding: 10px 12px;
+  color: #1d252c;
+}
+
+.upload-form button,
+.download-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 6px;
+  background: #226f64;
+  color: #fff;
+  padding: 10px 14px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.upload-form button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.feedback,
+.empty-state {
+  margin: 0;
+  color: #51616d;
+}
+
+.feedback-error {
+  color: #a33a2d;
+}
+
+.document-table-wrapper {
+  overflow-x: auto;
+}
+
+.document-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.document-table th,
+.document-table td {
+  border-bottom: 1px solid #e4ecef;
+  padding: 12px 10px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.document-table th {
+  color: #51616d;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+}
+
+@media (max-width: 760px) {
+  .app-shell {
+    width: min(100% - 24px, 1120px);
+    padding: 24px 0;
+  }
+
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+}
