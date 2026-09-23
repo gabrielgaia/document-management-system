@@ -1,20 +1,54 @@
-// Seed do componente raiz do Document Management System.
-//
-// Este é apenas um ponto de partida mínimo. Durante o Passo 3 você vai usar o
-// Agent Mode do GitHub Copilot para construir os componentes:
-//   - components/UploadComponent
-//   - components/DocumentList
-//   - components/DownloadButton
-// e o serviço services/ que consome a API do backend via fetch.
+import { useEffect, useState } from 'react';
+import './App.css';
+import DocumentList from './components/DocumentList';
+import UploadComponent from './components/UploadComponent';
+import { listDocuments } from './services/documentApi';
 
 export default function App() {
+  const [documents, setDocuments] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  async function loadDocuments() {
+    try {
+      setIsLoading(true);
+      setError('');
+      const loadedDocuments = await listDocuments();
+      setDocuments(loadedDocuments);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadDocuments();
+  }, []);
+
+  function handleDocumentUploaded(document) {
+    setDocuments((currentDocuments) => [document, ...currentDocuments]);
+  }
+
   return (
-    <main style={{ fontFamily: 'system-ui, sans-serif', padding: '2rem' }}>
-      <h1>Document Management System</h1>
-      <p>
-        Seed do frontend. Construa a interface durante o Passo 3 usando o Agent
-        Mode do GitHub Copilot.
-      </p>
+    <main className="app-shell">
+      <header className="app-header">
+        <h1>Document Management System</h1>
+        <p>Envie documentos, acompanhe os metadados registrados e baixe os arquivos armazenados localmente.</p>
+      </header>
+
+      <div className="content-grid">
+        <section className="panel" aria-labelledby="upload-title">
+          <h2 id="upload-title">Novo documento</h2>
+          <UploadComponent onDocumentUploaded={handleDocumentUploaded} />
+        </section>
+
+        <section className="panel" aria-labelledby="documents-title">
+          <h2 id="documents-title">Documentos</h2>
+          {error && <p className="feedback feedback-error">{error}</p>}
+          {!error && <DocumentList documents={documents} isLoading={isLoading} />}
+        </section>
+      </div>
     </main>
   );
 }
