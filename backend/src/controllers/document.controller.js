@@ -9,12 +9,20 @@ async function uploadDocument(req, res, next) {
       throw new AppError(400, 'FILE_REQUIRED', 'O campo "file" é obrigatório.');
     }
 
-    const owner = req.get('X-User-Id') || 'anonymous';
+    if (!req.file.originalname || req.file.originalname.length > 255) {
+      throw new AppError(400, 'INVALID_FILE_NAME', 'O nome do arquivo é inválido.');
+    }
+
+    const requestedOwner = req.get('X-User-Id')?.trim();
+    if (requestedOwner && requestedOwner.length > 100) {
+      throw new AppError(400, 'INVALID_OWNER', 'O identificador do usuário é inválido.');
+    }
+
     const document = await documentService.uploadDocument({
       originalName: req.file.originalname,
       storedName: req.file.filename,
       size: req.file.size,
-      owner,
+      owner: requestedOwner || 'anonymous',
     });
 
     res.status(201).json(document);

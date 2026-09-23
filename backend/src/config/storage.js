@@ -5,7 +5,14 @@ const fs = require('node:fs');
 
 const DEFAULT_STORAGE_DIR = path.join(__dirname, '..', '..', 'storage');
 const STORAGE_DIR = path.resolve(process.env.STORAGE_DIR || DEFAULT_STORAGE_DIR);
-const MAX_FILE_SIZE = Number(process.env.MAX_FILE_SIZE) || 10 * 1024 * 1024;
+const configuredMaxFileSize = process.env.MAX_FILE_SIZE;
+const MAX_FILE_SIZE = configuredMaxFileSize === undefined
+  ? 10 * 1024 * 1024
+  : Number(configuredMaxFileSize);
+
+if (!Number.isSafeInteger(MAX_FILE_SIZE) || MAX_FILE_SIZE <= 0) {
+  throw new Error('MAX_FILE_SIZE deve ser um inteiro positivo.');
+}
 
 function ensureStorageDir() {
   fs.mkdirSync(STORAGE_DIR, { recursive: true });
