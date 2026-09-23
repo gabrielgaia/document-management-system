@@ -69,43 +69,50 @@ test('rejeita upload sem arquivo com erro estruturado', async () => {
   });
 });
 
-test('expõe os endpoints de upload, listagem e download', async (t) => {
-  let uploadedDocument;
-
-  await t.test('faz upload do documento', async () => {
-    const { response, document } = await uploadSampleDocument({
-      fileName: '../relatorio.txt',
-    });
-
-    assert.strictEqual(response.status, 201);
-    assert.strictEqual(document.originalName, 'relatorio.txt');
-    assert.strictEqual(document.owner, 'user-123');
-    assert.ok(document.id);
-    assert.strictEqual(document.storedName, undefined);
-
-    const storedFiles = await fsPromises.readdir(storageDir);
-    assert.strictEqual(storedFiles.length, 1);
-    assert.match(storedFiles[0], /^[0-9a-f-]{36}\.txt$/);
-
-    uploadedDocument = document;
+test('faz upload do documento', async () => {
+  const { response, document } = await uploadSampleDocument({
+    content: 'conteudo do upload',
+    fileName: '../relatorio-upload.txt',
+    owner: 'user-upload',
   });
 
-  await t.test('lista documentos enviados', async () => {
-    const listResponse = await fetch(`${baseUrl}/documents`);
-    const { documents } = await listResponse.json();
+  assert.strictEqual(response.status, 201);
+  assert.strictEqual(document.originalName, 'relatorio-upload.txt');
+  assert.strictEqual(document.owner, 'user-upload');
+  assert.ok(document.id);
+  assert.strictEqual(document.storedName, undefined);
 
-    assert.strictEqual(listResponse.status, 200);
-    assert.ok(documents.some((document) => document.id === uploadedDocument.id));
-    assert.deepStrictEqual(
-      documents.find((document) => document.id === uploadedDocument.id),
-      uploadedDocument,
-    );
+  const storedFiles = await fsPromises.readdir(storageDir);
+  assert.ok(storedFiles.some((storedFile) => /^[0-9a-f-]{36}\.txt$/.test(storedFile)));
+});
+
+test('lista documentos enviados', async () => {
+  const { document: uploadedDocument } = await uploadSampleDocument({
+    content: 'conteudo da listagem',
+    fileName: 'relatorio-listagem.txt',
+    owner: 'user-list',
   });
 
-  await t.test('baixa documento pelo id', async () => {
-    const downloadResponse = await fetch(`${baseUrl}/documents/${uploadedDocument.id}/download`);
+  const listResponse = await fetch(`${baseUrl}/documents`);
+  const { documents } = await listResponse.json();
 
-    assert.strictEqual(downloadResponse.status, 200);
-    assert.strictEqual(await downloadResponse.text(), 'conteudo seguro');
+  assert.strictEqual(listResponse.status, 200);
+  assert.ok(documents.some((document) => document.id === uploadedDocument.id));
+  assert.deepStrictEqual(
+    documents.find((document) => document.id === uploadedDocument.id),
+    uploadedDocument,
+  );
+});
+
+test('baixa documento pelo id', async () => {
+  const { document: uploadedDocument } = await uploadSampleDocument({
+    content: 'conteudo do download',
+    fileName: 'relatorio-download.txt',
+    owner: 'user-download',
   });
+
+  const downloadResponse = await fetch(`${baseUrl}/documents/${uploadedDocument.id}/download`);
+
+  assert.strictEqual(downloadResponse.status, 200);
+  assert.strictEqual(await downloadResponse.text(), 'conteudo do download');
 });
