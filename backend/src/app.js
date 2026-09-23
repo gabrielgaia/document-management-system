@@ -38,6 +38,15 @@ app.use((err, req, res, next) => {
     });
   }
 
+  if (err instanceof multer.MulterError) {
+    return res.status(400).json({
+      error: {
+        code: 'INVALID_UPLOAD',
+        message: 'A requisição de upload é inválida.',
+      },
+    });
+  }
+
   if (err instanceof AppError) {
     return res.status(err.statusCode).json({
       error: { code: err.code, message: err.message },

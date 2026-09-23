@@ -5,7 +5,9 @@ async function parseResponse(response) {
   const data = contentType.includes('application/json') ? await response.json() : null;
 
   if (!response.ok) {
-    throw new Error(data?.message || 'Não foi possível concluir a operação.');
+    const error = new Error(data?.error?.message || 'Não foi possível concluir a operação.');
+    error.code = data?.error?.code;
+    throw error;
   }
 
   return data;
@@ -32,5 +34,5 @@ export async function listDocuments() {
 }
 
 export function getDocumentDownloadUrl(documentId) {
-  return `${API_BASE_URL}/documents/${documentId}/download`;
+  return `${API_BASE_URL}/documents/${encodeURIComponent(documentId)}/download`;
 }
